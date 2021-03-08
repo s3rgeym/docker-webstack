@@ -1,7 +1,7 @@
 # Development Stack
 
-Редактируем и перемещаем/копируем юнит (ссылка не будет работать после перезагрузки) в /etc/systemd/system, а затем выполняем:
-
 ```zsh
+$ cd devstack
+$ cat systemd-service.tpl | envsubst | sudo tee /etc/systemd/system/devstack.service &> /dev/null
 $ sudo systemctl enable --now devstack
 ```

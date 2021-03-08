@@ -6,7 +6,7 @@ Requires=docker.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-WorkingDirectory=/home/sergey/workspace/devstack
+WorkingDirectory=${PWD}
 ExecStart=/usr/bin/docker-compose up --remove-orphans -d
 ExecReload=/usr/bin/docker-compose up --remove-orphans -d
 ExecStop=/usr/bin/docker-compose down
