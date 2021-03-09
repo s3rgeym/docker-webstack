@@ -1,6 +1,6 @@
 # В /etc/hosts нужно добавить строку:
 #
-#  127.0.0.1 wiki.local pgadmin.local express.local notebook.local
+#  127.0.0.1 wiki.loc pgadmin.loc express.loc notebook.loc
 #
 version: '3.7'
 
@@ -36,7 +36,7 @@ services:
       - traefik-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.pgadmin.rule=Host(`pgadmin.local`)"
+      - "traefik.http.routers.pgadmin.rule=Host(`pgadmin.loc`)"
       - "traefik.http.routers.pgadmin.entrypoints=web"
 
   mysql:
@@ -88,7 +88,7 @@ services:
       - mongodb
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.mongo-express.rule=Host(`express.local`)"
+      - "traefik.http.routers.mongo-express.rule=Host(`express.loc`)"
       - "traefik.http.routers.mongo-express.entrypoints=web"
     profiles:
       - "cli-only"
@@ -129,7 +129,7 @@ services:
       - traefik-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.wiki.rule=Host(`wiki.local`)"
+      - "traefik.http.routers.wiki.rule=Host(`wiki.loc`)"
       - "traefik.http.routers.wiki.entrypoints=web"
 
   notebook:
@@ -145,7 +145,7 @@ services:
     labels:
       - 'traefik.enable=true'
       - 'traefik.http.routers.notebook.entrypoints=web'
-      - 'traefik.http.routers.notebook.rule=Host(`notebook.local`)'
+      - 'traefik.http.routers.notebook.rule=Host(`notebook.loc`)'
     profiles: ['cli-only']
 
   traefik:
@@ -161,7 +161,7 @@ services:
       - "--providers.docker.network=devstack_traefik-network"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.mongo-express.rule=Host(`express.local`)"
+      - "traefik.http.routers.mongo-express.rule=Host(`express.loc`)"
       - "traefik.http.routers.mongo-express.entrypoints=web"
     ports:
       - "80:80"
