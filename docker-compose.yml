@@ -1,6 +1,30 @@
 version: '3.7'
 
 services:
+  traefik:
+    image: "traefik:latest"
+    container_name: "traefik"
+    command:
+      #- "--ilog.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      # указываем полное имя сети вида каталог_имя-сети
+      - "--providers.docker.network=compose-webstack_traefik-net"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.loc`)"
+      - "traefik.http.routers.traefik.entrypoints=web"
+      - "traefik.http.routers.traefik.service=api@internal"
+    ports:
+      - "80:80"
+      #- "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - traefik-net
+
   postgres:
     image: postgres:alpine
     container_name: postgres
@@ -71,6 +95,8 @@ services:
       - '27018:27017'
     networks:
       - mongo-net
+    profiles:
+      - cli-only
 
   # админка для mongodb
   express:
@@ -94,6 +120,8 @@ services:
       - "traefik.http.routers.mongo-express.entrypoints=web"
     depends_on:
       - mongodb
+    profiles:
+      - cli-only
 
   redis:
     image: redis:alpine
@@ -143,30 +171,6 @@ services:
       - 'traefik.http.routers.jupyter-notebook.rule=Host(`jupyter.loc`)'
     # Запрещаем автозапуск. См. `docker-compose --profile`
     profiles: ['cli-only']
-
-  traefik:
-    image: "traefik:v2.4"
-    container_name: "traefik"
-    command:
-      #- "--ilog.level=DEBUG"
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      # указываем полное имя сети вида каталог_имя-сети
-      - "--providers.docker.network=compose-webstack_traefik-net"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.traefik.rule=Host(`traefik.loc`)"
-      - "traefik.http.routers.traefik.entrypoints=web"
-      - "traefik.http.routers.traefik.service=api@internal"
-    ports:
-      - "80:80"
-      #- "8080:8080"
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-    networks:
-      - traefik-net
 
 volumes:
   pgdata:
