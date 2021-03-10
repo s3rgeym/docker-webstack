@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eu -o pipefail
-CWD=$(cd `dirname "$0"`; pwd -P)
-SERVICE_NAME=`basename "$CWD"`
+SCRIPT_DIR=$(cd `dirname "$0"`; pwd -P)
+SERVICE_NAME=`basename "$SCRIPT_DIR"`
 
 cat << EOF > "/etc/systemd/system/${SERVICE_NAME}.service"
 [Unit]
@@ -12,7 +12,7 @@ Requires=docker.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-WorkingDirectory=${CWD}
+WorkingDirectory=${SCRIPT_DIR}
 ExecStart=$(which docker-compose) up --remove-orphans -d
 ExecReload=$(which docker-compose) up --remove-orphans -d
 ExecStop=$(which docker-compose) down

@@ -18,8 +18,6 @@ services:
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin
-    depends_on:
-      - postgres
     restart: unless-stopped
     env_file: .env
     volumes:
@@ -31,6 +29,8 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.pgadmin.rule=Host(`pgadmin.loc`)"
       - "traefik.http.routers.pgadmin.entrypoints=web"
+    depends_on:
+      - postgres
 
   mysql:
     image: mariadb:latest
@@ -43,6 +43,22 @@ services:
       - '33061:3306'
     networks:
       - mysql-net
+
+  # админка для sql-баз
+  adminer:
+    image: adminer:latest
+    container_name: adminer
+    restart: unless-stopped
+    env_file: .env
+    networks:
+      - mysql-net
+      - traefik-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.adminer.rule=Host(`adminer.loc`)"
+      - "traefik.http.routers.adminer.entrypoints=web"
+    depends_on:
+      - mysql
 
   mongodb:
     image: mongo:latest
@@ -74,12 +90,12 @@ services:
     networks:
       - mongo-net
       - traefik-net
-    depends_on:
-      - mongodb
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.mongo-express.rule=Host(`express.loc`)"
       - "traefik.http.routers.mongo-express.entrypoints=web"
+    depends_on:
+      - mongodb
     profiles:
       - "cli-only"
 
@@ -141,12 +157,12 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       # указываем полное имя сети вида каталог_имя-сети
-      - "--providers.docker.network=devstack_traefik-net"
+      - "--providers.docker.network=compose-webstack_traefik-net"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik.rule=Host(`traefik.loc`)"
-      - "traefik.http.routers.traefik.service=api@internal"
       - "traefik.http.routers.traefik.entrypoints=web"
+      - "traefik.http.routers.traefik.service=api@internal"
     ports:
       - "80:80"
       #- "8080:8080"

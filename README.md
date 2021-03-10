@@ -1,9 +1,9 @@
 # Development Stack
 
 ```bash
-$ cd devstack
+$ cd compose-webstack
 $ sudo ./add-systemd-service.sh
-$ systemctl status devstack
+$ systemctl status compose-webstack
 ```
 
 edit hosts:
@@ -15,5 +15,5 @@ $ sudo vim /ect/hosts
 add line:
 
 ```hosts
-127.0.0.1 traefik.loc wiki.loc pgadmin.loc express.loc notebook.loc
+127.0.0.1 traefik.loc wiki.loc pgadmin.loc adminer.loc express.loc notebook.loc
 ```
