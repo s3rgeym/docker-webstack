@@ -1,9 +1,7 @@
 # Development Stack
 
-```zsh
+```bash
 $ cd devstack
-$ cat systemd-service.tpl | \
-  envsubst | \
-  sudo tee /etc/systemd/system/devstack.service > /dev/null
-$ sudo systemctl enable --now devstack
+$ sudo ./add-systemd-service.sh
+$ systemctl status devstack
 ```
