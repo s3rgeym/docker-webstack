@@ -1,7 +1,3 @@
-# В /etc/hosts нужно добавить строку:
-#
-#  127.0.0.1 wiki.loc pgadmin.loc express.loc notebook.loc
-#
 version: '3.7'
 
 services:
@@ -17,7 +13,7 @@ services:
       # на хосте подключаемся к localhost:54321
       - '54321:5432'
     networks:
-      - postgres-network
+      - postgres-net
 
   pgadmin:
     image: dpage/pgadmin4
@@ -28,12 +24,9 @@ services:
     env_file: .env
     volumes:
       - pgadmin_data:/root/.pgadmin:rw
-    # ports:
-    #   - '5050:80'
     networks:
-      - pgadmin-network
-      - postgres-network
-      - traefik-network
+      - postgres-net
+      - traefik-net
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.pgadmin.rule=Host(`pgadmin.loc`)"
@@ -49,7 +42,7 @@ services:
     ports:
       - '33061:3306'
     networks:
-      - mysql-network
+      - mysql-net
 
   mongodb:
     image: mongo:latest
@@ -59,9 +52,9 @@ services:
     volumes:
       - mongo_data:/data/db:rw
     ports:
-      - '37017:27017'
+      - '27018:27017'
     networks:
-      - mongo-network
+      - mongo-net
     # Запрещаем автозапуск. См. `docker-compose --profile`
     profiles:
       - "cli-only"
@@ -78,12 +71,9 @@ services:
       ME_CONFIG_MONGODB_AUTH_DATABASE: "${MONGO_INITDB_DATABASE}"
       ME_CONFIG_MONGODB_AUTH_USERNAME: "${MONGO_INITDB_ROOT_USERNAME}"
       ME_CONFIG_MONGODB_AUTH_PASSWORD: "${MONGO_INITDB_ROOT_PASSWORD}"
-    # ports:
-      # - '9081:8081'
     networks:
-      - express-network
-      - mongo-network
-      - traefik-network
+      - mongo-net
+      - traefik-net
     depends_on:
       - mongodb
     labels:
@@ -102,13 +92,13 @@ services:
     ports:
       - '63791:6379'
     networks:
-      - redis-network
+      - redis-net
 
   # Локальная вики
   # Чтобы заработала надо в postgres создать базу wiki
-  wiki:
+  wikijs:
     image: requarks/wiki:latest
-    container_name: wiki
+    container_name: wikijs
     depends_on:
       - postgres
     restart: unless-stopped
@@ -120,32 +110,25 @@ services:
       DB_USER: "${POSTGRES_USER}"
       DB_PASS: "${POSTGRES_PASSWORD}"
       DB_NAME: wiki
-    # ports:
-      # 3000 порт по-дефолту в примерах для node.js
-      # - '30001:3000'
     networks:
-      - wiki-network
-      - postgres-network
-      - traefik-network
+      - postgres-net
+      - traefik-net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.wiki.rule=Host(`wiki.loc`)"
-      - "traefik.http.routers.wiki.entrypoints=web"
+      - "traefik.http.routers.wikijs.rule=Host(`wiki.loc`)"
+      - "traefik.http.routers.wikijs.entrypoints=web"
 
-  notebook:
+  jupyter-notebook:
     image: 'jupyter/minimal-notebook'
-    container_name: 'notebook'
+    container_name: 'jupyter-notebook'
     networks:
-      - notebook-network
-      - traefik-network
-    # ports:
-    #   - '10000:8888'
+      - traefik-net
     volumes:
-      - notebook_data:/home/jovyan/work
+      - jupyter_data:/home/jovyan/work
     labels:
       - 'traefik.enable=true'
-      - 'traefik.http.routers.notebook.entrypoints=web'
-      - 'traefik.http.routers.notebook.rule=Host(`notebook.loc`)'
+      - 'traefik.http.routers.jupyter-notebook.entrypoints=web'
+      - 'traefik.http.routers.jupyter-notebook.rule=Host(`jupyter.loc`)'
     profiles: ['cli-only']
 
   traefik:
@@ -157,19 +140,20 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
-      # стоит обратить внимание на имя сети (по-умолчанию: <directory>_<network>)
-      - "--providers.docker.network=devstack_traefik-network"
+      # указываем полное имя сети вида каталог_имя-сети
+      - "--providers.docker.network=devstack_traefik-net"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.mongo-express.rule=Host(`express.loc`)"
-      - "traefik.http.routers.mongo-express.entrypoints=web"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.loc`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+      #- "traefik.http.routers.traefik.entrypoints=web"
     ports:
       - "80:80"
-      - "9080:8080"
+      #- "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     networks:
-      - traefik-network
+      - traefik-net
 
 volumes:
   pgdata:
@@ -177,15 +161,11 @@ volumes:
   mysql_data:
   mongo_data:
   redis_data:
-  notebook_data:
+  jupyter_data:
 
 networks:
-  postgres-network:
-  pgadmin-network:
-  mysql-network:
-  mongo-network:
-  express-network:
-  redis-network:
-  wiki-network:
-  notebook-network:
-  traefik-network:
+  postgres-net:
+  mysql-net:
+  mongo-net:
+  redis-net:
+  traefik-net:
