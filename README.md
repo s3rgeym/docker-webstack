@@ -25,10 +25,3 @@ add line:
 ```hosts
 127.0.0.1 pgadmin.local traefik.local wikijs.local
 ```
-
-sources:
-
-```
-postgres://postgres:secret@localhost:54321/db
-redis://localhost:63791/1
-```
