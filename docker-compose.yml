@@ -1,196 +1,96 @@
 version: '3.7'
 
 services:
-  # автоматическое обновление контейнеров
-  # watchtower:
-  #   image: containrrr/watchtower
-  #   restart: unless-stopped
-  #   volumes:
-  #     - "/var/run/docker.sock:/var/run/docker.sock"
-
-  traefik:
-    image: "traefik:latest"
-    container_name: "traefik"
-    restart: unless-stopped
-    command:
-      #- "--ilog.level=DEBUG"
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      # указываем полное имя сети вида каталог_имя-сети
-      - "--providers.docker.network=compose-webstack_traefik-net"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.traefik.rule=Host(`traefik.loc`)"
-      - "traefik.http.routers.traefik.entrypoints=web"
-      - "traefik.http.routers.traefik.service=api@internal"
-    ports:
-      - "80:80"
-      #- "8080:8080"
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-    networks:
-      - traefik-net
-
-  postgres:
-    image: postgres:alpine
-    container_name: postgres
-    restart: unless-stopped
-    env_file: .env
-    volumes:
-      - pgdata:/var/lib/postgresql/data:rw
-    ports:
-      # из других контейнеров в общей сети нужно подключиться к postgres:5432
-      # на хосте подключаемся к localhost:5433
-      - '5433:5432'
-    networks:
-      - postgres-net
-
   pgadmin:
-    image: dpage/pgadmin4
     container_name: pgadmin
-    restart: unless-stopped
-    env_file: .env
-    volumes:
-      - pgadmin_data:/root/.pgadmin:rw
-    networks:
-      - postgres-net
-      - traefik-net
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.pgadmin.rule=Host(`pgadmin.loc`)"
-      - "traefik.http.routers.pgadmin.entrypoints=web"
     depends_on:
       - postgres
-
-  mysql:
-    image: mariadb:latest
-    container_name: mysql
-    restart: unless-stopped
     env_file: .env
-    volumes:
-      - mysql_data:/var/lib/mysql:rw
-    ports:
-      - '3307:3306'
-    networks:
-      - mysql-net
-
-  # админка для баз данных SQL
-  adminer:
-    image: adminer:latest
-    container_name: adminer
-    restart: unless-stopped
-    env_file: .env
-    networks:
-      - mysql-net
-      - traefik-net
+    image: dpage/pgadmin4
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.adminer.rule=Host(`adminer.loc`)"
-      - "traefik.http.routers.adminer.entrypoints=web"
-    depends_on:
-      - mysql
-
-  mongodb:
-    image: mongo:latest
-    container_name: mongodb
+      - traefik.enable=true
+      - traefik.http.routers.pgadmin.rule=Host(`pgadmin.local`)
+      - traefik.http.routers.pgadmin.entrypoints=web
+    networks:
+      - postgres-network
+      - traefik-network
     restart: unless-stopped
-    env_file: .env
     volumes:
-      - mongo_data:/data/db:rw
-    ports:
-      - '27018:27017'
-    networks:
-      - mongo-net
-    profiles:
-      - cli-only
+      - pgadmin_data:/root/.pgadmin:rw
 
-  # админка для mongodb
-  express:
-    image: mongo-express:latest
-    container_name: express
-    restart: unless-stopped
+  postgres:
+    container_name: postgres
     env_file: .env
-    environment:
-      ME_CONFIG_MONGODB_SERVER: 'mongodb'
-      ME_CONFME_CONFIG_MONGODB_PORT: '27017'
-      ME_CONFIG_MONGODB_ENABLE_ADMIN: 'true'
-      ME_CONFIG_MONGODB_AUTH_DATABASE: 'admin'
-      ME_CONFIG_MONGODB_ADMINUSERNAME: "${MONGO_INITDB_ROOT_USERNAME}"
-      ME_CONFIG_MONGODB_ADMINPASSWORD: "${MONGO_INITDB_ROOT_PASSWORD}"
+    image: postgres:alpine
     networks:
-      - mongo-net
-      - traefik-net
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.mongo-express.rule=Host(`express.loc`)"
-      - "traefik.http.routers.mongo-express.entrypoints=web"
-    depends_on:
-      - mongodb
-    profiles:
-      - cli-only
+      - postgres-network
+    ports:
+      - '54321:5432'
+    restart: unless-stopped
+    volumes:
+      - pgdata:/var/lib/postgresql/data:rw
 
   redis:
-    image: redis:alpine
     container_name: redis
+    image: redis:alpine
+    networks:
+      - redis-network
+    ports:
+      - '63791:6379'
     restart: unless-stopped
     volumes:
       - redis_data:/var/lib/redis:rw
-    ports:
-      - '63791:6379'
-    networks:
-      - redis-net
 
-  # Локальная вики
-  # Чтобы заработала надо в postgres создать базу wiki
+  traefik:
+    command:
+      - '--api.insecure=true'
+      - '--providers.docker=true'
+      - '--providers.docker.exposedbydefault=false'
+      - '--entrypoints.web.address=:80'
+      - '--providers.docker.network=docker-webstack_traefik-network'
+    container_name: traefik
+    image: traefik:latest
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.traefik.rule=Host(`traefik.local`)
+      - traefik.http.routers.traefik.entrypoints=web
+      - traefik.http.routers.traefik.service=api@internal
+    networks:
+      - traefik-network
+    ports:
+      - '80:80'
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
   wikijs:
-    image: requarks/wiki:latest
     container_name: wikijs
     depends_on:
       - postgres
-    restart: unless-stopped
     env_file: .env
     environment:
-      DB_TYPE: postgres
       DB_HOST: postgres
+      DB_NAME: wikijs
+      DB_PASS: ${POSTGRES_PASSWORD}
       DB_PORT: 5432
-      DB_USER: "${POSTGRES_USER}"
-      DB_PASS: "${POSTGRES_PASSWORD}"
-      DB_NAME: wiki
-    networks:
-      - postgres-net
-      - traefik-net
+      DB_TYPE: postgres
+      DB_USER: ${POSTGRES_USER}
+    image: requarks/wiki:latest
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.wikijs.rule=Host(`wiki.loc`)"
-      - "traefik.http.routers.wikijs.entrypoints=web"
-
-  jupyter-notebook:
-    image: 'jupyter/minimal-notebook'
-    container_name: 'jupyter-notebook'
+      - traefik.enable=true
+      - traefik.http.routers.wikijs.rule=Host(`wikijs.local`)
+      - traefik.http.routers.wikijs.entrypoints=web
     networks:
-      - traefik-net
-    volumes:
-      - jupyter_data:/home/jovyan/work
-    labels:
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.jupyter-notebook.entrypoints=web'
-      - 'traefik.http.routers.jupyter-notebook.rule=Host(`jupyter.loc`)'
-    # Запрещаем автозапуск. См. `docker-compose --profile`
-    profiles: ['cli-only']
+      - postgres-network
+      - traefik-network
+    restart: unless-stopped
 
 volumes:
-  pgdata:
-  pgadmin_data:
-  mysql_data:
-  mongo_data:
-  redis_data:
-  jupyter_data:
+  pgadmin_data: {}
+  pgdata: {}
+  redis_data: {}
 
 networks:
-  postgres-net:
-  mysql-net:
-  mongo-net:
-  redis-net:
-  traefik-net:
+  postgres-network: {}
+  redis-network: {}
+  traefik-network: {}
