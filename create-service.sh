@@ -2,6 +2,7 @@
 set -eu -o pipefail
 SCRIPT_DIR=$(cd `dirname "$0"`; pwd -P)
 SERVICE_NAME=`basename "$SCRIPT_DIR"`
+COMPOSE_EXEC=`which docker-compose`
 
 cat << EOF > "/etc/systemd/system/${SERVICE_NAME}.service"
 [Unit]
@@ -13,9 +14,8 @@ Requires=docker.service
 Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=${SCRIPT_DIR}
-ExecStart=$(which docker-compose) up --remove-orphans -d
-ExecReload=$(which docker-compose) up --remove-orphans -d
-ExecStop=$(which docker-compose) down
+ExecStart=${COMPOSE_EXEC} up --remove-orphans -d
+ExecStop=${COMPOSE_EXEC} down
 
 [Install]
 WantedBy=multi-user.target
