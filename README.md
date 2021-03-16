@@ -23,5 +23,5 @@ $ sudo vim /ect/hosts
 add line:
 
 ```hosts
-127.0.0.1 pgadmin.local traefik.local wikijs.local
+127.0.0.1 pgadmin.local traefik.local wiki.local
 ```

@@ -25,7 +25,7 @@ services:
     networks:
       - postgres-network
     ports:
-      - '54321:5432'
+      - '5433:5432'
     restart: unless-stopped
     volumes:
       - pgdata:/var/lib/postgresql/data:rw
@@ -36,7 +36,7 @@ services:
     networks:
       - redis-network
     ports:
-      - '63791:6379'
+      - '6380:6379'
     restart: unless-stopped
     volumes:
       - redis_data:/var/lib/redis:rw
@@ -78,8 +78,8 @@ services:
     image: requarks/wiki:latest
     labels:
       - traefik.enable=true
-      - traefik.http.routers.wikijs.rule=Host(`wikijs.local`)
-      - traefik.http.routers.wikijs.entrypoints=web
+      - traefik.http.routers.wiki.rule=Host(`wiki.local`)
+      - traefik.http.routers.wiki.entrypoints=web
     networks:
       - postgres-network
       - traefik-network
