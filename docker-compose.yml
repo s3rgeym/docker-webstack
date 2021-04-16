@@ -7,16 +7,13 @@ services:
       - postgres
     env_file: .env
     image: dpage/pgadmin4
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.pgadmin.rule=Host(`pgadmin.local`)
-      - traefik.http.routers.pgadmin.entrypoints=web
     networks:
       - postgres-network
-      - traefik-network
+    ports:
+      - '5050:80'
     restart: unless-stopped
     volumes:
-      - pgadmin_data:/root/.pgadmin:rw
+      - pgadmin-data:/var/lib/pgadmin:rw
 
   postgres:
     container_name: postgres
@@ -39,29 +36,7 @@ services:
       - '6380:6379'
     restart: unless-stopped
     volumes:
-      - redis_data:/var/lib/redis:rw
-
-  traefik:
-    command:
-      - '--api.insecure=true'
-      - '--providers.docker=true'
-      - '--providers.docker.exposedbydefault=false'
-      - '--entrypoints.web.address=:80'
-      - '--providers.docker.network=docker-webstack_traefik-network'
-    container_name: traefik
-    image: traefik:latest
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.traefik.rule=Host(`traefik.local`)
-      - traefik.http.routers.traefik.entrypoints=web
-      - traefik.http.routers.traefik.service=api@internal
-    networks:
-      - traefik-network
-    ports:
-      - '80:80'
-    restart: unless-stopped
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - redis-data:/var/lib/redis:rw
 
   wikijs:
     container_name: wikijs
@@ -70,27 +45,23 @@ services:
     env_file: .env
     environment:
       DB_HOST: postgres
-      DB_NAME: wikijs
+      DB_NAME: wiki
       DB_PASS: ${POSTGRES_PASSWORD}
       DB_PORT: 5432
       DB_TYPE: postgres
       DB_USER: ${POSTGRES_USER}
     image: requarks/wiki:latest
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.wiki.rule=Host(`wiki.local`)
-      - traefik.http.routers.wiki.entrypoints=web
     networks:
       - postgres-network
-      - traefik-network
+    ports:
+      - '3000:3000'
     restart: unless-stopped
 
 volumes:
-  pgadmin_data: {}
+  pgadmin-data: {}
   pgdata: {}
-  redis_data: {}
+  redis-data: {}
 
 networks:
   postgres-network: {}
   redis-network: {}
-  traefik-network: {}
